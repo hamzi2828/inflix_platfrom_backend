@@ -44,3 +44,5 @@ Copy `.env.example` to `.env` and set:
 MongoDB creates the DB on first write; no Atlas Admin API required.
 
 # pos-platfrom-backend
+
+# inflix_platfrom_backend
