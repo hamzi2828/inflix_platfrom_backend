@@ -1,0 +1,28 @@
+# Server
+NODE_ENV=development
+PORT=5001
+
+# Master DB (platform data only) — same cluster as POS, different database
+MASTER_MONGODB_URI=mongodb+srv://ali_db_user:WZtaI6RHM3JO21uA@inflix-pos.s0vnp1u.mongodb.net/inflix_master
+MASTER_DB_NAME=inflix_master
+
+# Tenant DBs on same cluster: dbName = TENANT_DB_PREFIX + tenantId
+TENANT_DB_PREFIX=tenant_
+
+# Platform auth (JWT for platform console)
+JWT_SECRET=pos_inflix_jwt_secret_key_2024_secure
+JWT_EXPIRE=7d
+PLATFORM_JWT_SECRET=pos_platform_jwt_secret_2024_secure
+PLATFORM_JWT_EXPIRE=7d
+
+# Tenant app APIs: shared secret for entitlements + events (not platform login)
+PLATFORM_SHARED_SECRET=inflix_platform_shared_secret_change_in_production
+
+# Optional: allowlist of emails for platform console
+PLATFORM_ADMIN_EMAILS=hello@inflix.co.uk
+
+# Bcrypt
+BCRYPT_SALT_ROUNDS=10
+
+# CORS (platform frontend origin; comma-separated for multiple)
+CORS_ORIGIN=http://localhost:3000,http://localhost:3001
