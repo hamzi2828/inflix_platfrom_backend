@@ -236,28 +236,29 @@ exports.createTenant = asyncHandler(async (req, res) => {
 /** Get one tenant */
 exports.getTenant = asyncHandler(async (req, res) => {
     const { tenantId } = req.params;
+    console.log('[getTenant] tenantId:', tenantId);
     const tenant = await Tenant.findOne({ tenantId }).lean();
+    console.log('[getTenant] tenant found:', tenant ? 'yes' : 'no');
     if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
-    res.status(200).json({
-        success: true,
-        data: {
-            tenantId: tenant.tenantId,
-            tenantSubdomain: tenant.tenantSubdomain,
-            tenantUrl: tenant.tenantUrl,
-            name: tenant.name,
-            companyName: tenant.companyName,
-            email: tenant.email,
-            phone: tenant.phone,
-            billingAddress: tenant.billingAddress,
-            billingEmail: tenant.billingEmail,
-            billingAmount: tenant.billingAmount,
-            billingCycle: tenant.billingCycle,
-            currency: tenant.currency,
-            status: tenant.status,
-            createdAtUtc: tenant.createdAtUtc,
-            updatedAtUtc: tenant.updatedAtUtc
-        }
-    });
+    const responseData = {
+        tenantId: tenant.tenantId,
+        tenantSubdomain: tenant.tenantSubdomain,
+        tenantUrl: tenant.tenantUrl,
+        name: tenant.name,
+        companyName: tenant.companyName,
+        email: tenant.email,
+        phone: tenant.phone,
+        billingAddress: tenant.billingAddress,
+        billingEmail: tenant.billingEmail,
+        billingAmount: tenant.billingAmount,
+        billingCycle: tenant.billingCycle,
+        currency: tenant.currency,
+        status: tenant.status,
+        createdAtUtc: tenant.createdAtUtc,
+        updatedAtUtc: tenant.updatedAtUtc
+    };
+    console.log('[getTenant] response:', JSON.stringify(responseData, null, 2));
+    res.status(200).json({ success: true, data: responseData });
 });
 
 /** Derive a valid subdomain from tenantId when tenant has none (e.g. legacy tenants). */
@@ -478,27 +479,28 @@ exports.deleteTenantUser = asyncHandler(async (req, res) => {
 /** Get subscription + effective entitlements + usage */
 exports.getSubscription = asyncHandler(async (req, res) => {
     const { tenantId } = req.params;
+    console.log('[getSubscription] tenantId:', tenantId);
     const sub = await TenantSubscription.findOne({ tenantId }).lean();
+    console.log('[getSubscription] subscription:', JSON.stringify(sub, null, 2));
     const [entitlements, usage] = await Promise.all([
         entitlementsService.getEntitlements(tenantId),
         entitlementsService.getUsage(tenantId)
     ]);
-    res.status(200).json({
-        success: true,
-        data: {
-            tenantId,
-            subscriptionType: sub?.subscriptionType || 'plan',
-            planKey: sub ? sub.planKey : null,
-            startDate: sub?.startDate ?? null,
-            expireDate: sub?.expireDate ?? null,
-            overrides: sub ? { features: mapToObject(sub.overrides?.features), limits: mapToObject(sub.overrides?.limits) } : { features: {}, limits: {} },
-            effective: {
-                enabledFeatures: entitlements.enabledFeatures,
-                limits: entitlements.limits
-            },
-            usage
-        }
-    });
+    const responseData = {
+        tenantId,
+        subscriptionType: sub?.subscriptionType || 'plan',
+        planKey: sub ? sub.planKey : null,
+        startDate: sub?.startDate ?? null,
+        expireDate: sub?.expireDate ?? null,
+        overrides: sub ? { features: mapToObject(sub.overrides?.features), limits: mapToObject(sub.overrides?.limits) } : { features: {}, limits: {} },
+        effective: {
+            enabledFeatures: entitlements.enabledFeatures,
+            limits: entitlements.limits
+        },
+        usage
+    };
+    console.log('[getSubscription] response:', JSON.stringify(responseData, null, 2));
+    res.status(200).json({ success: true, data: responseData });
 });
 
 /** Update subscription */
