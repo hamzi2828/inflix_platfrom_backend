@@ -271,6 +271,8 @@ function deriveSubdomainFromTenantId(tenantId) {
 exports.updateTenant = asyncHandler(async (req, res) => {
     const { tenantId } = req.params;
     const { name, companyName, email, phone, billingAddress, billingEmail, billingAmount, billingCycle, currency, status } = req.body || {};
+    console.log('[updateTenant] tenantId:', tenantId);
+    console.log('[updateTenant] req.body:', JSON.stringify(req.body, null, 2));
     let tenant = await Tenant.findOne({ tenantId });
     if (!tenant) {
         tenant = await Tenant.create({
@@ -307,6 +309,32 @@ exports.updateTenant = asyncHandler(async (req, res) => {
         await tenant.save();
     }
     await activityLogService.logFromReq(req, { action: 'PLATFORM_TENANT_UPDATED', entityType: 'Tenant', entityId: tenantId, success: true, message: `Tenant updated: ${tenantId}`, metaJson: { tenantId } });
+
+    // Also store billing info in tenant DB for tenant app access
+    try {
+        const tenantConn = getTenantConnection(tenantId);
+        if (tenantConn) {
+            await tenantConn.collection('billing').updateOne(
+                { tenantId },
+                {
+                    $set: {
+                        tenantId,
+                        billingEmail: tenant.billingEmail,
+                        billingAmount: tenant.billingAmount,
+                        billingCycle: tenant.billingCycle,
+                        currency: tenant.currency,
+                        status: tenant.status,
+                        updatedAtUtc: new Date()
+                    }
+                },
+                { upsert: true }
+            );
+            console.log('[updateTenant] Synced billing to tenant DB:', tenantId);
+        }
+    } catch (syncErr) {
+        console.error('[updateTenant] Failed to sync billing to tenant DB:', syncErr.message);
+    }
+
     res.status(200).json({ success: true, data: tenant, message: 'Tenant updated' });
 });
 
@@ -344,6 +372,8 @@ exports.listTenantUsers = asyncHandler(async (req, res) => {
     if (!tenant) return res.status(404).json({ success: false, message: 'Tenant not found' });
     const User = getTenantUserModel(tenantId);
     if (!User) return res.status(200).json({ success: true, data: [] });
+    // Ensure Role model is registered before populate
+    getTenantRoleModel(tenantId);
     const users = await User.find({ tenantId }).select('-password').populate('roles', 'name description').sort('-createdAt').lean();
     const data = users.map((u) => ({
         _id: u._id,
@@ -457,6 +487,7 @@ exports.getSubscription = asyncHandler(async (req, res) => {
         success: true,
         data: {
             tenantId,
+            subscriptionType: sub?.subscriptionType || 'plan',
             planKey: sub ? sub.planKey : null,
             startDate: sub?.startDate ?? null,
             expireDate: sub?.expireDate ?? null,
@@ -473,20 +504,24 @@ exports.getSubscription = asyncHandler(async (req, res) => {
 /** Update subscription */
 exports.updateSubscription = asyncHandler(async (req, res) => {
     const { tenantId } = req.params;
-    const { planKey, overrides, startDate, expireDate } = req.body;
+    const { planKey, overrides, startDate, expireDate, subscriptionType } = req.body;
+    console.log('[updateSubscription] tenantId:', tenantId);
+    console.log('[updateSubscription] req.body:', JSON.stringify(req.body, null, 2));
     let sub = await TenantSubscription.findOne({ tenantId });
     const before = sub ? sub.toObject() : null;
     if (!sub) {
         const now = new Date();
         sub = await TenantSubscription.create({
             tenantId,
-            planKey: (planKey || 'starter').trim().toLowerCase(),
+            subscriptionType: subscriptionType === 'custom' ? 'custom' : 'plan',
+            planKey: subscriptionType === 'custom' ? '' : (planKey || 'starter').trim().toLowerCase(),
             overrides: { features: (overrides && overrides.features) || {}, limits: (overrides && overrides.limits) || {} },
             startDate: startDate ? new Date(startDate) : now,
             expireDate: expireDate ? new Date(expireDate) : null
         });
     } else {
-        if (planKey !== undefined) sub.planKey = (planKey || 'starter').trim().toLowerCase();
+        if (subscriptionType !== undefined) sub.subscriptionType = subscriptionType === 'custom' ? 'custom' : 'plan';
+        if (planKey !== undefined) sub.planKey = (planKey || '').trim().toLowerCase();
         if (overrides && typeof overrides.features === 'object') sub.overrides.features = overrides.features;
         if (overrides && typeof overrides.limits === 'object') sub.overrides.limits = overrides.limits;
         if (startDate !== undefined) sub.startDate = startDate ? new Date(startDate) : null;
@@ -494,14 +529,45 @@ exports.updateSubscription = asyncHandler(async (req, res) => {
         await sub.save();
     }
     await activityLogService.logFromReq(req, { action: 'PLATFORM_ENTITLEMENTS_UPDATED', entityType: 'TenantSubscription', entityId: sub._id, success: true, message: `Subscription updated for tenant ${tenantId}`, metaJson: { tenantId } });
+
     const [entitlements, usage] = await Promise.all([
         entitlementsService.getEntitlements(tenantId),
         entitlementsService.getUsage(tenantId)
     ]);
+
+    // Also store subscription + effective entitlements in tenant DB for tenant app access
+    try {
+        const tenantConn = getTenantConnection(tenantId);
+        if (tenantConn) {
+            await tenantConn.collection('subscription').updateOne(
+                { tenantId },
+                {
+                    $set: {
+                        tenantId,
+                        subscriptionType: sub.subscriptionType || 'plan',
+                        planKey: sub.planKey,
+                        startDate: sub.startDate,
+                        expireDate: sub.expireDate,
+                        overrides: { features: mapToObject(sub.overrides.features), limits: mapToObject(sub.overrides.limits) },
+                        effective: {
+                            enabledFeatures: entitlements.enabledFeatures,
+                            limits: entitlements.limits
+                        },
+                        updatedAtUtc: new Date()
+                    }
+                },
+                { upsert: true }
+            );
+            console.log('[updateSubscription] Synced subscription + entitlements to tenant DB:', tenantId);
+        }
+    } catch (syncErr) {
+        console.error('[updateSubscription] Failed to sync to tenant DB:', syncErr.message);
+    }
     res.status(200).json({
         success: true,
         data: {
             tenantId,
+            subscriptionType: sub.subscriptionType || 'plan',
             planKey: sub.planKey,
             startDate: sub.startDate ?? null,
             expireDate: sub.expireDate ?? null,

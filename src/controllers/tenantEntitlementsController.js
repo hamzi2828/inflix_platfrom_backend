@@ -18,12 +18,13 @@ exports.getEntitlements = asyncHandler(async (req, res) => {
         entitlementsService.getEntitlements(tenantId),
         entitlementsService.getUsage(tenantId),
         Tenant.findOne({ tenantId }).select('status billingAmount billingCycle currency billingEmail billingAddress').lean(),
-        TenantSubscription.findOne({ tenantId }).select('startDate expireDate').lean()
+        TenantSubscription.findOne({ tenantId }).select('subscriptionType startDate expireDate').lean()
     ]);
     const status = (tenant && tenant.status === 'suspended') ? 'suspended' : 'active';
     res.status(200).json({
         success: true,
         data: {
+            subscriptionType: subscription?.subscriptionType ?? 'plan',
             planKey: entitlements.planKey,
             enabledFeatures: entitlements.enabledFeatures,
             limits: entitlements.limits,

@@ -8,12 +8,16 @@ const tenantSubscriptionSchema = new mongoose.Schema({
         trim: true,
         maxlength: [128]
     },
+    subscriptionType: {
+        type: String,
+        enum: ['plan', 'custom'],
+        default: 'plan'
+    },
     planKey: {
         type: String,
-        required: true,
         trim: true,
         lowercase: true,
-        default: 'starter',
+        default: '',
         maxlength: [64]
     },
     overrides: {
