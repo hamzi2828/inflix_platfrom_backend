@@ -31,6 +31,7 @@ router.delete('/plan-catalog/:planKey', planCatalog.deletePlan);
 router.get('/roles', tenants.listRoles);
 
 router.get('/tenants', tenants.list);
+router.get('/tenants-check-subdomain/:subdomain', tenants.checkSubdomain);
 router.post('/tenants', tenants.createTenant);
 router.get('/tenants/:tenantId/subscription', tenants.getSubscription);
 router.put('/tenants/:tenantId/subscription', tenants.updateSubscription);

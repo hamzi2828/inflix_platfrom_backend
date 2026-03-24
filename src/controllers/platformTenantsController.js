@@ -18,7 +18,7 @@ function generateTenantId() {
     return crypto.randomBytes(4).toString('base64url').replace(/[-_]/g, '').toLowerCase().slice(0, 8) || crypto.randomBytes(4).toString('hex');
 }
 
-const TENANT_ID_REGEX = /^[a-z0-9]{4,32}$/;
+const TENANT_ID_REGEX = /^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/;
 function isValidTenantIdFormat(id) {
     return typeof id === 'string' && TENANT_ID_REGEX.test(id.trim());
 }
@@ -41,6 +41,14 @@ function getTenantRoleModel(tenantId) {
     if (conn.models.Role) return conn.models.Role;
     return conn.model('Role', tenantRoleSchema);
 }
+
+/** Check if subdomain (= tenantId) is available */
+exports.checkSubdomain = asyncHandler(async (req, res) => {
+    const subdomain = (req.params.subdomain || '').trim().toLowerCase();
+    if (!subdomain) return res.json({ success: true, available: false, message: 'Subdomain is required' });
+    const existing = await Tenant.findOne({ tenantId: subdomain }).select('tenantId').lean();
+    res.json({ success: true, available: !existing });
+});
 
 /** List tenants */
 exports.list = asyncHandler(async (req, res) => {
@@ -124,23 +132,15 @@ exports.createTenant = asyncHandler(async (req, res) => {
     const displayName = (name || companyName || '').trim() || 'New Tenant';
     const planKey = (bodyPlanKey && String(bodyPlanKey).trim()) ? String(bodyPlanKey).toLowerCase() : 'starter';
 
-    const tenantUrl = `https://${tenantSubdomain}.${config.tenantUrlDomain || 'inflix.uk'}`;
+    const tenantUrl = body.tenantUrl
+        ? String(body.tenantUrl).trim()
+        : `https://${tenantSubdomain}.${config.tenantUrlDomain || 'inflix.uk'}`;
 
-    let tenantId = generateTenantId();
-    let attempts = 0;
-    const maxAttempts = 5;
-    while (attempts < maxAttempts) {
-        const [existing] = await Tenant.find({ tenantId }).limit(1);
-        if (!existing) break;
-        tenantId = generateTenantId();
-        attempts++;
-    }
-    if (!isValidTenantIdFormat(tenantId)) {
-        tenantId = crypto.randomBytes(4).toString('hex');
-    }
-    const [collision] = await Tenant.find({ tenantId }).limit(1);
-    if (collision) {
-        return res.status(400).json({ success: false, message: 'Tenant ID collision; retry' });
+    // tenantId = subdomain → DB name becomes tenant_{subdomain}
+    const tenantId = tenantSubdomain;
+    const existingById = await Tenant.findOne({ tenantId }).lean();
+    if (existingById) {
+        return res.status(400).json({ success: false, message: 'That tenantId is already in use' });
     }
 
     const contactEmailVal = (contactEmail ?? email ?? '').toString().trim().toLowerCase();
