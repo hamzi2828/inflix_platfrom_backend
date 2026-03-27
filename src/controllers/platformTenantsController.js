@@ -331,6 +331,16 @@ exports.updateTenant = asyncHandler(async (req, res) => {
                 { upsert: true }
             );
             console.log('[updateTenant] Synced billing to tenant DB:', tenantId);
+
+            // Also sync status to subscription collection in tenant DB
+            if (status !== undefined) {
+                await tenantConn.collection('subscription').updateOne(
+                    { tenantId },
+                    { $set: { status: tenant.status, updatedAtUtc: new Date() } },
+                    { upsert: false }
+                );
+                console.log('[updateTenant] Synced status to tenant DB subscription:', tenantId);
+            }
         }
     } catch (syncErr) {
         console.error('[updateTenant] Failed to sync billing to tenant DB:', syncErr.message);
