@@ -6,6 +6,7 @@ const limitCatalog = require('../controllers/platformLimitCatalogController');
 const planCatalog = require('../controllers/platformPlanCatalogController');
 const tenants = require('../controllers/platformTenantsController');
 const platformAdminAccounts = require('../controllers/platformAdminAccountsController');
+const healthChecker = require('../controllers/healthCheckerController');
 
 router.use(requirePlatformAuth);
 
@@ -44,5 +45,14 @@ router.delete('/tenants/:tenantId/users/:userId', tenants.deleteTenantUser);
 router.get('/tenants/:tenantId', tenants.getTenant);
 router.put('/tenants/:tenantId', tenants.updateTenant);
 router.delete('/tenants/:tenantId', tenants.deleteTenant);
+
+// Health Checker
+router.get('/health-checker/tenants', healthChecker.listTenants);
+router.get('/health-checker/summary', healthChecker.summary);
+router.get('/health-checker/endpoints', healthChecker.endpoints);
+router.get('/health-checker/slow', healthChecker.slow);
+router.get('/health-checker/users', healthChecker.users);
+router.get('/health-checker/recent', healthChecker.recent);
+router.get('/health-checker/timeline', healthChecker.timeline);
 
 module.exports = router;
