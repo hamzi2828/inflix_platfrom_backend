@@ -3,7 +3,7 @@ NODE_ENV=development
 PORT=5001
 
 # Master DB (platform data only) — same cluster as POS, different database
-MASTER_MONGODB_URI=mongodb://zextonadminmo:%24tr0ngP%40%24%24w0rd@149.102.157.190:27017/inflix_master?authSource=admin
+MASTER_MONGODB_URI=mongodb://admin_inflix_root:kqcFAj9aVV6GsjtOkPH9icOlqIkWw16e@153.92.211.241:32770/?authSource=admin
 MASTER_DB_NAME=inflix_master
 
 # Tenant DBs on same cluster: dbName = TENANT_DB_PREFIX + tenantId
