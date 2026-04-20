@@ -7,7 +7,7 @@ const connectDB = async () => {
         if (!uri) {
             console.error('MASTER_MONGODB_URI is required');
             process.exit(1);
-        }
+        }  
         const conn = await mongoose.connect(uri, {
             dbName: config.masterDbName
         });
