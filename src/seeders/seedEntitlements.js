@@ -11,7 +11,8 @@ const FEATURES = [
     { key: 'printing', name: 'Printing', description: 'Receipt and invoice printing', category: 'Core', defaultEnabled: true, isActive: true },
     { key: 'stock_transfer', name: 'Stock Transfer', description: 'Transfer stock between locations', category: 'Inventory', defaultEnabled: true, isActive: true },
     { key: 'stock_adjustment', name: 'Stock Adjustment', description: 'Stock adjustments and write-offs', category: 'Inventory', defaultEnabled: true, isActive: true },
-    { key: 'audit', name: 'Audit Log', description: 'Activity and audit log', category: 'Core', defaultEnabled: true, isActive: true }
+    { key: 'audit', name: 'Audit Log', description: 'Activity and audit log', category: 'Core', defaultEnabled: true, isActive: true },
+    { key: 'invoices', name: 'Invoices', description: 'Separate invoice flow with tax categories (create-invoice + invoice-online-order)', category: 'Core', defaultEnabled: true, isActive: true }
 ];
 
 const LIMITS = [
@@ -21,9 +22,9 @@ const LIMITS = [
 ];
 
 const PLANS = [
-    { planKey: 'starter', name: 'Starter', description: 'For small teams', priceMetadata: { monthly: 29, currency: 'GBP' }, features: { repairs: true, reports: true, inventory: true, printing: true, stock_transfer: false, stock_adjustment: true, audit: true }, limits: { maxUsers: 3, maxLocations: 2, maxRepairsPerMonth: 50 }, isActive: true },
-    { planKey: 'pro', name: 'Pro', description: 'For growing businesses', priceMetadata: { monthly: 79, currency: 'GBP' }, features: { repairs: true, reports: true, inventory: true, printing: true, stock_transfer: true, stock_adjustment: true, audit: true }, limits: { maxUsers: 15, maxLocations: 10, maxRepairsPerMonth: 500 }, isActive: true },
-    { planKey: 'enterprise', name: 'Enterprise', description: 'Unlimited', priceMetadata: { monthly: 199, currency: 'GBP' }, features: { repairs: true, reports: true, inventory: true, printing: true, stock_transfer: true, stock_adjustment: true, audit: true }, limits: { maxUsers: null, maxLocations: null, maxRepairsPerMonth: null }, isActive: true }
+    { planKey: 'starter', name: 'Starter', description: 'For small teams', priceMetadata: { monthly: 29, currency: 'GBP' }, features: { repairs: true, reports: true, inventory: true, printing: true, stock_transfer: false, stock_adjustment: true, audit: true, invoices: true }, limits: { maxUsers: 3, maxLocations: 2, maxRepairsPerMonth: 50 }, isActive: true },
+    { planKey: 'pro', name: 'Pro', description: 'For growing businesses', priceMetadata: { monthly: 79, currency: 'GBP' }, features: { repairs: true, reports: true, inventory: true, printing: true, stock_transfer: true, stock_adjustment: true, audit: true, invoices: true }, limits: { maxUsers: 15, maxLocations: 10, maxRepairsPerMonth: 500 }, isActive: true },
+    { planKey: 'enterprise', name: 'Enterprise', description: 'Unlimited', priceMetadata: { monthly: 199, currency: 'GBP' }, features: { repairs: true, reports: true, inventory: true, printing: true, stock_transfer: true, stock_adjustment: true, audit: true, invoices: true }, limits: { maxUsers: null, maxLocations: null, maxRepairsPerMonth: null }, isActive: true }
 ];
 
 async function run() {

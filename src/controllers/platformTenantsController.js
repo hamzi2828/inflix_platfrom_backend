@@ -10,6 +10,7 @@ const activityLogService = require('../services/activityLogService');
 const { getTenantConnection, getTenantDbName } = require('../services/tenantConnection');
 const tenantUserSchema = require('../models/tenantUserSchema');
 const tenantRoleSchema = require('../models/tenantRoleSchema');
+const { seedTenantRbac } = require('../seeders/seedTenantRbac');
 const { validatePassword } = require('../utils/passwordPolicy');
 const { mapToObject } = require('../services/entitlementsService');
 
@@ -172,6 +173,10 @@ exports.createTenant = asyncHandler(async (req, res) => {
     const tenantDbName = getTenantDbName(tenantId);
     const conn = getTenantConnection(tenantId);
     await conn.collection('__init').insertOne({ tenantId, createdAtUtc: now });
+
+    // Seed full permission catalogue (sale.*, invoice.*, etc.) and default roles
+    // so platform admins can allot any permission to this tenant immediately.
+    await seedTenantRbac(conn);
 
     const wantFirstAdmin = Boolean(createFirstAdminFlag) || (typeof body.createFirstAdmin === 'object' && body.createFirstAdmin && body.createFirstAdmin.email && body.createFirstAdmin.password);
     const firstAdmin = firstAdminBody || (typeof body.createFirstAdmin === 'object' ? body.createFirstAdmin : null);
